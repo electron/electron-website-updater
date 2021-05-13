@@ -34,7 +34,7 @@
       "presentation": {
         "hidden": true
       },
-      "program": "${workspaceFolder}/webhook/index.js",
+      "program": "${workspaceFolder}/index.js",
       "request": "launch",
       "skipFiles": ["<node_internals>/**"],
       "type": "pwa-node",
@@ -46,7 +46,7 @@
       "presentation": {
         "hidden": true
       },
-      "program": "${workspaceFolder}/webhook/node_modules/.bin/smee",
+      "program": "${workspaceFolder}/node_modules/.bin/smee",
       "request": "launch",
       "skipFiles": ["<node_internals>/**"],
       "type": "pwa-node",
