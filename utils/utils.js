@@ -4,8 +4,16 @@ const { verify } = require('@octokit/webhooks-methods');
 const { Octokit } = require('@octokit/rest');
 const { createAppAuth } = require('@octokit/auth-app');
 
-const SECRET = process.env.WEBHOOK_SECRET;
 const DOC_CHANGES_TYPE = 'doc_changes';
+const {
+  GITHUB_TOKEN,
+  WEBHOOK_SECRET,
+  APP_ID,
+  CLIENT_PRIVATE_KEY,
+  INSTALLATION_ID,
+  CLIENT_ID,
+  CLIENT_SECRET,
+} = process.env;
 
 const getLatestInformation = async () => {
   const version = await latestVersion('electron');
@@ -25,7 +33,7 @@ const getLatestInformation = async () => {
  * @param {import('express').NextFunction} next
  */
 const verifyIntegrity = async (req, res, next) => {
-  if (!SECRET) {
+  if (!WEBHOOK_SECRET) {
     console.log('No secret specified, skipping integrity check');
     return next();
   }
@@ -36,7 +44,7 @@ const verifyIntegrity = async (req, res, next) => {
     return res.status(400).send(`Missing signature in payload`);
   }
 
-  const valid = await verify(SECRET, req.body, signature);
+  const valid = await verify(WEBHOOK_SECRET, req.body, signature);
 
   if (valid) {
     return next();
@@ -47,31 +55,54 @@ const verifyIntegrity = async (req, res, next) => {
 };
 
 /**
- * Returns an authenticated `Octokit` object.
- * It will be as a user if `GITHUB_TOKEN` is available
- * or an installation otherwise.
- *
- * @returns {Octokit}
+ * Validates that all required values to create a GitHub App
+ * are available
  */
-const getOctokit = () => {
-  if (process.env.GITHUB_TOKEN) {
-    const user = new Octokit({
-      auth: process.env.GITHUB_TOKEN,
-    });
-  } else {
-    const app = new Octokit({
+const appInfoAvailable = () => {
+  return (
+    !!APP_ID &&
+    !!CLIENT_PRIVATE_KEY &&
+    !!INSTALLATION_ID &&
+    !!CLIENT_ID &&
+    !!CLIENT_SECRET
+  );
+};
+
+let _authorization;
+
+/**
+ * Creates the right auth strategy based on the
+ * available environment variables:
+ * * `GITHUB_TOKEN`: Token Auth
+ * * `APP_ID`: App Auth
+ */
+const getAuthorization = () => {
+  if (_authorization) {
+    return _authorization;
+  } else if (appInfoAvailable()) {
+    console.log(`Authenticating using GitHub app`);
+    _authorization = {
       authStrategy: createAppAuth,
       auth: {
-        appId: process.env.APP_ID,
-        privateKey: JSON.parse(process.env.CLIENT_PRIVATE_KEY),
-        installationId: process.env.INSTALLATION_ID,
-        clientId: process.env.CLIENT_ID,
-        clientSecret: process.env.CLIENT_SECRET,
+        appId: APP_ID,
+        privateKey: JSON.parse(CLIENT_PRIVATE_KEY),
+        installationId: INSTALLATION_ID,
+        clientId: CLIENT_ID,
+        clientSecret: CLIENT_SECRET,
       },
-    });
+    };
 
-    return app;
+    return _authorization;
+  } else if (GITHUB_TOKEN) {
+    console.log(`Authenticating using token`);
+    _authorization = {
+      auth: GITHUB_TOKEN,
+    };
+
+    return _authorization;
   }
+
+  throw new Error(`Could not identify the right auth strategy`);
 };
 
 /**
@@ -83,16 +114,40 @@ const getOctokit = () => {
  * @param {string} sha The commit's SHA
  */
 const sendRepositoryDispatchEvent = async (owner, repo, sha) => {
-  const octokit = getOctokit();
+  const octokit = new Octokit(getAuthorization());
 
-  return await octokit.repos.createDispatchEvent({
-    owner,
-    repo,
-    event_type: DOC_CHANGES_TYPE,
-    client_payload: {
-      sha,
-    },
-  });
+  try {
+    await octokit.repos.createDispatchEvent({
+      owner,
+      repo,
+      event_type: DOC_CHANGES_TYPE,
+      client_payload: {
+        sha,
+      },
+    });
+  } catch (e) {
+    console.error(`Error sending repository_dispatch`);
+    console.error(e);
+  }
+};
+
+const getAuthenticatedGraphql = async () => {
+  const authorization = getAuthorization();
+
+  if (typeof authorization.auth !== 'string') {
+    const auth = authorization.authStrategy(authorization.auth);
+    const authedGraphql = graphql.defaults({ request: { hook: auth.hook } });
+
+    return authedGraphql;
+  } else {
+    const authedGraphql = graphql.defaults({
+      headers: {
+        authorization: `token ${authorization.auth}`,
+      },
+    });
+
+    return authedGraphql;
+  }
 };
 
 /**
@@ -109,10 +164,9 @@ const getSHAFromTag = async (repository, tagName) => {
     owner,
     repo,
     tagName,
-    headers: {
-      authorization: `token ${GITHUB_TOKEN}`,
-    },
   };
+
+  const graphqlWithAuth = await getAuthenticatedGraphql();
 
   const {
     repository: {
@@ -120,7 +174,7 @@ const getSHAFromTag = async (repository, tagName) => {
         tagCommit: { oid },
       },
     },
-  } = await graphql(
+  } = await graphqlWithAuth(
     `
       query shaFromTag($owner: String!, $repo: String!, $tagName: String!) {
         repository(owner: $owner, name: $repo) {
