@@ -67,6 +67,7 @@ const pushHandler = async (req, res) => {
  * @param {import('express').Response} res
  */
 const releaseHandler = async (req, res) => {
+  console.log(`New release payload received`);
   /** @type {import('@octokit/webhooks-types').ReleaseEvent} */
   const payload = req.body;
 
@@ -81,6 +82,9 @@ const releaseHandler = async (req, res) => {
   // release and an npm one.
   const tag = payload.release.tag_name.replace(/^v/, '');
   const isStable = semver.coerce(tag).version === tag;
+
+  console.log(`Version received: ${tag}`);
+  console.log(`Latest version:   ${version}`);
 
   if (
     payload.action === 'released' &&

@@ -116,6 +116,8 @@ const getAuthorization = () => {
 const sendRepositoryDispatchEvent = async (owner, repo, sha) => {
   const octokit = new Octokit(getAuthorization());
 
+  console.log(`Sending payload with SHA "${sha}"`);
+
   try {
     await octokit.repos.createDispatchEvent({
       owner,
@@ -125,6 +127,8 @@ const sendRepositoryDispatchEvent = async (owner, repo, sha) => {
         sha,
       },
     });
+
+    console.log(`Payload sent`);
   } catch (e) {
     console.error(`Error sending repository_dispatch`);
     console.error(e);
@@ -158,6 +162,8 @@ const getAuthenticatedGraphql = async () => {
  * @returns {Promise<string>}
  */
 const getSHAFromTag = async (repository, tagName) => {
+  console.log(`Getting SHA for "${repository}" and "${tagName}"`);
+
   const [owner, repo] = repository.split('/');
 
   const parameters = {
@@ -189,6 +195,7 @@ const getSHAFromTag = async (repository, tagName) => {
     parameters
   );
 
+  console.log(`SHA is ${oid}`);
   return oid;
 };
 
