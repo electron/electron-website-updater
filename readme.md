@@ -1,7 +1,22 @@
 # webhook
 
 This project handles the webhooks from `electron/electron` and filters them
-to dispatch only the appropriate ones as `repository_dispatch` events.
+to dispatch only the appropriate ones as `repository_dispatch` events to
+`electron/electronjs.org-new` ("that repo").
+
+These events are used to let that repo know there have been documentation changes.
+
+This repo is subscribed to all `push` events in `electron/electron`. When
+a payload comes it:
+
+1. Checks if there have been changes to the `/docs` folder
+1. Determines in what branch the commit has happend
+1. Sends a `repository_dispatch` with the following information:
+   * `sha`: the SHA of the commit received
+   * `branch`: the branch of the commit, usually something like `15-x-y`
+   * `event_type`:
+     * `doc_changes` if the changes have happened in the major release
+     * `doc_changes_previous` if the changes have happened in a previous major release
 
 ## Local setup
 

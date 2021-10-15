@@ -4,14 +4,12 @@ const got = require('got').default.extend({
   throwHttpErrors: false,
 });
 
-const mockSHA = '123456';
 const utils = require('../utils/utils');
 utils.sendRepositoryDispatchEvent = jest.fn().mockResolvedValue('');
 utils.getLatestInformation = jest.fn().mockResolvedValue({
   version: '12.0.6',
   branch: '12-x-y',
 });
-utils.getSHAFromTag = jest.fn().mockResolvedValue(mockSHA);
 
 const { start } = require('../index');
 
@@ -93,7 +91,7 @@ describe('webhook server', () => {
       expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
     });
 
-    it('does not send a "repository_dispatch" when a "push" is for the non stable branch', async () => {
+    it('does send a "repository_dispatch" when a "push" is for the non stable branch with "doc_changes_previous"', async () => {
       const payload = await getPayload('push');
       payload.ref = 'refs/heads/1-x-y';
 
@@ -109,10 +107,16 @@ describe('webhook server', () => {
       );
 
       expect(response.statusCode).toBe(200);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
+      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(1);
+      expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
+        'electron',
+        'electronjs.org-new',
+        'doc_changes_previous',
+        { branch: '1-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
+      );
     });
 
-    it('sends a "repository_dispatch" when a "push" contains doc changes', async () => {
+    it('sends a "repository_dispatch" when a "push" contains doc changes in the current branch with "doc_changes"', async () => {
       const payload = await getPayload('push');
 
       const response = await got.post(
@@ -128,19 +132,23 @@ describe('webhook server', () => {
 
       expect(response.statusCode).toBe(200);
       expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(1);
+      expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
+        'electron',
+        'electronjs.org-new',
+        'doc_changes',
+        { branch: '12-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
+      );
     });
-  });
 
-  describe('release event', () => {
-    it('it sends a "repository_dispatch" when a "release" is for a newer version', async () => {
-      const payload = await getPayload('release');
-      payload.release.tag_name = 'v12.0.7';
+    it('sends a "repository_dispatch" when a "push" contains doc changes for a new branch with "doc_changes"', async () => {
+      const payload = await getPayload('push');
+      payload.ref = 'refs/heads/13-x-y';
 
       const response = await got.post(
         `http://localhost:${server.port}/webhook`,
         {
           headers: {
-            'X-GitHub-Event': 'release',
+            'X-GitHub-Event': 'push',
           },
           json: payload,
           responseType: 'text',
@@ -149,87 +157,12 @@ describe('webhook server', () => {
 
       expect(response.statusCode).toBe(200);
       expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(1);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledWith(
+      expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
         'electron',
         'electronjs.org-new',
-        mockSHA
+        'doc_changes',
+        { branch: '13-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
       );
-    });
-
-    it('it does not send a "repository_dispatch" when a "release" is for a pre-release', async () => {
-      const payload = await getPayload('release');
-      payload.release.prerelease = true;
-
-      const response = await got.post(
-        `http://localhost:${server.port}/webhook`,
-        {
-          headers: {
-            'X-GitHub-Event': 'release',
-          },
-          json: payload,
-          responseType: 'text',
-        }
-      );
-
-      expect(response.statusCode).toBe(200);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
-    });
-
-    it('it does not send a "repository_dispatch" when a "release" is for a draft', async () => {
-      const payload = await getPayload('release');
-      payload.release.draft = true;
-
-      const response = await got.post(
-        `http://localhost:${server.port}/webhook`,
-        {
-          headers: {
-            'X-GitHub-Event': 'release',
-          },
-          json: payload,
-          responseType: 'text',
-        }
-      );
-
-      expect(response.statusCode).toBe(200);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
-    });
-
-    it('it does not send a "repository_dispatch" when a "release" is for a nightly', async () => {
-      const payload = await getPayload('release');
-      payload.release.tag_name = 'v14.0.0-nightly.20210506';
-
-      const response = await got.post(
-        `http://localhost:${server.port}/webhook`,
-        {
-          headers: {
-            'X-GitHub-Event': 'release',
-          },
-          json: payload,
-          responseType: 'text',
-        }
-      );
-
-      expect(response.statusCode).toBe(200);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
-    });
-
-    it('it does not send a "repository_dispatch" when a "release" is for a previous version', async () => {
-      const payload = await getPayload('release');
-      payload.release.tag_name = 'v11.10.0';
-
-      const response = await got.post(
-        `http://localhost:${server.port}/webhook`,
-        {
-          headers: {
-            'X-GitHub-Event': 'release',
-          },
-          json: payload,
-          responseType: 'text',
-        }
-      );
-
-      expect(response.statusCode).toBe(200);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
     });
   });
 });
