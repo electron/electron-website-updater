@@ -91,7 +91,7 @@ describe('webhook server', () => {
       expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
     });
 
-    it('does send a "repository_dispatch" when a "push" is for the non stable branch with "doc_changes_previous"', async () => {
+    it('does send a "repository_dispatch" when a "push" is for the non stable branch with "doc_changes_branches"', async () => {
       const payload = await getPayload('push');
       payload.ref = 'refs/heads/1-x-y';
 
@@ -111,12 +111,12 @@ describe('webhook server', () => {
       expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
         'electron',
         'electronjs.org-new',
-        'doc_changes_previous',
+        'doc_changes_branches',
         { branch: '1-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
       );
     });
 
-    it('sends a "repository_dispatch" when a "push" contains doc changes in the current branch with "doc_changes"', async () => {
+    it('sends 2 "repository_dispatch" when a "push" contains doc changes in the current branch with "doc_changes" and "doc_changes_branches"', async () => {
       const payload = await getPayload('push');
 
       const response = await got.post(
@@ -131,11 +131,18 @@ describe('webhook server', () => {
       );
 
       expect(response.statusCode).toBe(200);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(1);
+      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(2);
       expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
         'electron',
         'electronjs.org-new',
         'doc_changes',
+        { branch: '12-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
+      );
+
+      expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
+        'electron',
+        'electronjs.org-new',
+        'doc_changes_branches',
         { branch: '12-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
       );
     });
@@ -156,11 +163,18 @@ describe('webhook server', () => {
       );
 
       expect(response.statusCode).toBe(200);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(1);
+      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(2);
       expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
         'electron',
         'electronjs.org-new',
         'doc_changes',
+        { branch: '13-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
+      );
+
+      expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
+        'electron',
+        'electronjs.org-new',
+        'doc_changes_branches',
         { branch: '13-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
       );
     });
