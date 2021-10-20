@@ -13,7 +13,7 @@ const SOURCE_REPO = `electron`;
 const TARGET_REPO = `electronjs.org-new`;
 const EVENT_TYPE = {
   CURRENT: 'doc_changes',
-  PREVIOUS: 'doc_changes_previous',
+  BRANCHES: 'doc_changes_branches',
 };
 
 /**
@@ -45,7 +45,7 @@ const areFilesInFolderChanged = (pushEvent, folder) => {
  * @param {string} latest
  * @param {string} current
  */
-const getEventType = (latest, current) => {
+const isLatest = (latest, current) => {
   try {
     const majorRegex = /(?:refs\/heads\/)?(\d+)-x-y/;
     const [, latestMajor] = majorRegex.exec(latest);
@@ -55,12 +55,12 @@ const getEventType = (latest, current) => {
     const parsedCurrent = parseInt(currentMajor);
 
     if (parsedCurrent < parsedLatest) {
-      return EVENT_TYPE.PREVIOUS;
+      return false;
     } else {
-      return EVENT_TYPE.CURRENT;
+      return true;
     }
   } catch (e) {
-    return '';
+    return false;
   }
 };
 
@@ -79,16 +79,26 @@ const pushHandler = async (req, res) => {
     payload.repository.full_name === `${OWNER}/${SOURCE_REPO}` &&
     areFilesInFolderChanged(payload, 'docs')
   ) {
-    const eventType = getEventType(branch, payload.ref);
-    if(!eventType){
-      console.log(`Could not find right version for ${payload.ref}`)
-      return;
-    }
+    const latest = isLatest(branch, payload.ref);
 
-    await sendRepositoryDispatchEvent(OWNER, TARGET_REPO, eventType, {
+    // Send an event that will update the docs in `vXX-Y-Z`
+    await sendRepositoryDispatchEvent(OWNER, TARGET_REPO, EVENT_TYPE.BRANCHES, {
       sha: payload.after,
       branch: payload.ref.replace('refs/heads/', ''),
     });
+
+    // Send an event that will update the docs in `main` if changes are for latest
+    if (latest) {
+      await sendRepositoryDispatchEvent(
+        OWNER,
+        TARGET_REPO,
+        EVENT_TYPE.CURRENT,
+        {
+          sha: payload.after,
+          branch: payload.ref.replace('refs/heads/', ''),
+        }
+      );
+    }
   }
 
   return res.status(200).send();
