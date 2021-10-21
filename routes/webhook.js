@@ -77,7 +77,8 @@ const pushHandler = async (req, res) => {
 
   if (
     payload.repository.full_name === `${OWNER}/${SOURCE_REPO}` &&
-    areFilesInFolderChanged(payload, 'docs')
+    areFilesInFolderChanged(payload, 'docs') &&
+    /\d\d?-x-y/.test(payload.ref.replace('refs/heads/', ''))
   ) {
     const latest = isLatest(branch, payload.ref);
 
