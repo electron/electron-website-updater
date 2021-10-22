@@ -40,6 +40,17 @@ const areFilesInFolderChanged = (pushEvent, folder) => {
 };
 
 /**
+ * Returns the major part of a branch format (`xx-y-z`)
+ * @param {string} version
+ */
+const getMajor = (version) => {
+  const majorRegex = /(?:refs\/heads\/)?(\d+)-x-y/;
+  const [, major] = majorRegex.exec(version);
+
+  return parseInt(major);
+};
+
+/**
  * Compares 2 refs or branches and returns a boolean indicating
  * if `current` is from a previous release than `latest`.
  * @param {string} latest
@@ -47,14 +58,10 @@ const areFilesInFolderChanged = (pushEvent, folder) => {
  */
 const isLatest = (latest, current) => {
   try {
-    const majorRegex = /(?:refs\/heads\/)?(\d+)-x-y/;
-    const [, latestMajor] = majorRegex.exec(latest);
-    const [, currentMajor] = majorRegex.exec(current);
+    const latestMajor = getMajor(latest);
+    const currentMajor = getMajor(current);
 
-    const parsedLatest = parseInt(latestMajor);
-    const parsedCurrent = parseInt(currentMajor);
-
-    if (parsedCurrent < parsedLatest) {
+    if (currentMajor < latestMajor) {
       return false;
     } else {
       return true;
@@ -62,6 +69,34 @@ const isLatest = (latest, current) => {
   } catch (e) {
     return false;
   }
+};
+
+/**
+ * @returns {boolean}
+ */
+const shouldSendEvent = (stableBranch, payload) => {
+  const branchCommit = payload.ref.replace('refs/heads/', '');
+  // Event is coming from the right source
+  if (payload.repository.full_name !== `${OWNER}/${SOURCE_REPO}`) {
+    return false;
+  }
+
+  // The event comes from a stable branch (`vXX-x-y`)
+  if (!/\d\d?-x-y/.test(branchCommit)) {
+    return false;
+  }
+
+  // Docs have been modified in the commit
+  if (!areFilesInFolderChanged(payload, 'docs')) {
+    return false;
+  }
+
+  // We do not want to process commits from future stables
+  if (getMajor(branchCommit) > getMajor(stableBranch)) {
+    return false;
+  }
+
+  return true;
 };
 
 /**
@@ -75,11 +110,7 @@ const pushHandler = async (req, res) => {
   /** @type {import('@octokit/webhooks-types').PushEvent} */
   const payload = req.body;
 
-  if (
-    payload.repository.full_name === `${OWNER}/${SOURCE_REPO}` &&
-    areFilesInFolderChanged(payload, 'docs') &&
-    /\d\d?-x-y/.test(payload.ref.replace('refs/heads/', ''))
-  ) {
+  if (shouldSendEvent(branch, payload)) {
     const latest = isLatest(branch, payload.ref);
 
     // Send an event that will update the docs in `vXX-Y-Z`

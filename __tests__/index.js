@@ -95,6 +95,7 @@ describe('webhook server', () => {
       const payload = await getPayload('push');
       payload.ref = 'refs/heads/1-x-y';
 
+
       const response = await got.post(
         `http://localhost:${server.port}/webhook`,
         {
@@ -147,7 +148,8 @@ describe('webhook server', () => {
       );
     });
 
-    it('sends a "repository_dispatch" when a "push" contains doc changes for a new branch with "doc_changes"', async () => {
+    it('does not send a "repository_dispatch" if "push" is for an unreleased version', async () => {
+      // Latest stable is 12 and here the event is for 13
       const payload = await getPayload('push');
       payload.ref = 'refs/heads/13-x-y';
 
@@ -163,20 +165,7 @@ describe('webhook server', () => {
       );
 
       expect(response.statusCode).toBe(200);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(2);
-      expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
-        'electron',
-        'electronjs.org-new',
-        'doc_changes',
-        { branch: '13-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
-      );
-
-      expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
-        'electron',
-        'electronjs.org-new',
-        'doc_changes_branches',
-        { branch: '13-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
-      );
+      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
     });
   });
 });
