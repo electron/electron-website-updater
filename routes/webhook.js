@@ -82,7 +82,7 @@ const shouldSendEvent = (stableBranch, payload) => {
   }
 
   // The event comes from a stable branch (`vXX-x-y`)
-  if (!/\d\d?-x-y/.test(branchCommit)) {
+  if (!/^\d\d?-x-y/.test(branchCommit)) {
     return false;
   }
 

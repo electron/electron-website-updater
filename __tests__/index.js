@@ -167,5 +167,25 @@ describe('webhook server', () => {
       expect(response.statusCode).toBe(200);
       expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
     });
+
+    it('does not send a "repository_dispatch" if "push" is for a trop branch targetting a release version', async () => {
+      // Latest stable is 12 and here the event is for 13
+      const payload = await getPayload('push');
+      payload.ref = 'refs/heads/trop/12-x-y-bp-docs-win-getparentwindow-returns-browserwindow-null--1635174659170';
+
+      const response = await got.post(
+        `http://localhost:${server.port}/webhook`,
+        {
+          headers: {
+            'X-GitHub-Event': 'push',
+          },
+          json: payload,
+          responseType: 'text',
+        }
+      );
+
+      expect(response.statusCode).toBe(200);
+      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
+    });
   });
 });
