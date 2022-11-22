@@ -2,7 +2,7 @@
 
 This project handles the webhooks from `electron/electron` and filters them
 to dispatch only the appropriate ones as `repository_dispatch` events to
-`electron/electronjs.org-new` ("that repo").
+`electron/website` ("that repo").
 
 These events are used to let that repo know there have been documentation changes.
 
@@ -74,7 +74,7 @@ Go [here to create a new GitHub App][github app] and use the following data (if 
 mentioned, you can leave the defaults):
 
 - GitHub App name: Electron Website Updater
-- Homepage URL: https://github.com/OWNER/electronjs.org-new
+- Homepage URL: https://github.com/OWNER/website
 - Webhook: deactivated
 - Repository permissions:
   - Contents - Read & write

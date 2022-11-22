@@ -10,7 +10,7 @@ const {
 
 const OWNER = process.env.OWNER || 'electron';
 const SOURCE_REPO = `electron`;
-const TARGET_REPO = `electronjs.org-new`;
+const TARGET_REPO = `website`;
 const EVENT_TYPE = {
   CURRENT: 'doc_changes',
   BRANCHES: 'doc_changes_branches',
