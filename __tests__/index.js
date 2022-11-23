@@ -111,7 +111,7 @@ describe('webhook server', () => {
       expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(1);
       expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
         'electron',
-        'electronjs.org-new',
+        'website',
         'doc_changes_branches',
         { branch: '1-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
       );
@@ -135,14 +135,14 @@ describe('webhook server', () => {
       expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(2);
       expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
         'electron',
-        'electronjs.org-new',
+        'website',
         'doc_changes',
         { branch: '12-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
       );
 
       expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
         'electron',
-        'electronjs.org-new',
+        'website',
         'doc_changes_branches',
         { branch: '12-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
       );
