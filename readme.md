@@ -1,5 +1,7 @@
 # webhook
 
+[![Test](https://github.com/electron/electron-website-updater/actions/workflows/test.yml/badge.svg)](https://github.com/electron/electron-website-updater/actions/workflows/test.yml)
+
 This project handles the webhooks from `electron/electron` and filters them
 to dispatch only the appropriate ones as `repository_dispatch` events to
 `electron/website` ("that repo").
