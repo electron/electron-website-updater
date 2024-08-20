@@ -12,17 +12,16 @@ const start = async (port) => {
   return new Promise(async (resolve) => {
     const app = express();
 
-    app.use(bodyParser.json());
+    app.use(bodyParser.json({ limit: '1mb' }));
 
     await addWebhooks(app);
 
-    app.get('/', (req, res) => {
+    app.get('/', (_req, res) => {
       res.send(`There's nothing here!`);
     });
 
     const server = app.listen(port, () => {
       console.log(`API listening on port ${port}`);
-      server.port = port;
       resolve(server);
     });
   });
