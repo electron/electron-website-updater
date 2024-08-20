@@ -22,6 +22,8 @@ const start = async (port) => {
 
     const server = app.listen(port, () => {
       console.log(`API listening on port ${port}`);
+      // @ts-expect-error FIXME: see if we can remove this line of code because `server.port` is not valid according to the types
+      server.port = port;
       resolve(server);
     });
   });
