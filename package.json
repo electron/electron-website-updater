@@ -19,7 +19,7 @@
     "@octokit/webhooks-methods": "^1.0.0",
     "body-parser": "^1.20.3",
     "dotenv-safe": "^8.2.0",
-    "express": "^4.19.2",
+    "express": "^4.20.0",
     "semver": "^6.3.1"
   },
   "devDependencies": {
