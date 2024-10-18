@@ -174,7 +174,7 @@ following scenarios:
 
 ## Running the tests
 
-Tests for `/webhook` are written using [Jest][jest], and run from the root of the repo:
+Tests for `/webhook` are written using Node's test runner, and run from the root of the repo:
 
 ```console
 yarn test
@@ -183,5 +183,4 @@ yarn test
 Test files should be close to the files they are testing under a folder `__tests__`.
 
 [pat]: https://github.com/settings/tokens
-[jest]: https://jestjs.io/
 [github app]: https://github.com/settings/apps/new

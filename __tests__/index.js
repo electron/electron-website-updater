@@ -1,12 +1,14 @@
+const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const { join } = require('node:path');
+const { afterEach, beforeEach, describe, mock, it } = require('node:test');
 
 const utils = require('../utils/utils');
-utils.sendRepositoryDispatchEvent = jest.fn().mockResolvedValue('');
-utils.getLatestInformation = jest.fn().mockResolvedValue({
+utils.sendRepositoryDispatchEvent = mock.fn(() => Promise.resolve(''));
+utils.getLatestInformation = mock.fn(() => Promise.resolve({
   version: '12.0.6',
   branch: '12-x-y',
-});
+}));
 
 const { start } = require('../index');
 
@@ -46,6 +48,8 @@ describe('webhook server', () => {
   beforeEach(async () => {
     const port = getPort();
     server = await start(port);
+    utils.sendRepositoryDispatchEvent.mock.resetCalls();
+    utils.getLatestInformation.mock.resetCalls();
   });
 
   afterEach(() => {
@@ -53,11 +57,11 @@ describe('webhook server', () => {
     freePort(server.port);
   });
 
-  it('responds to /', async () => {
+  it.only('responds to /', async () => {
     const response = await fetch(`http://localhost:${server.port}/`);
 
-    expect(response.status).toBe(200);
-    expect(await response.text()).toBe(`There's nothing here!`);
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(await response.text(), `There's nothing here!`);
   });
 
   it('returns a 404 if it does not exists', async () => {
@@ -65,7 +69,7 @@ describe('webhook server', () => {
       `http://localhost:${server.port}/do-not-exists`
     );
 
-    expect(response.status).toBe(404);
+    assert.strictEqual(response.status, 404);
   });
 
   describe('push event', () => {
@@ -85,8 +89,8 @@ describe('webhook server', () => {
         }
       );
 
-      expect(response.status).toBe(200);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
+      assert.strictEqual(response.status, 200);
+      assert.strictEqual(utils.sendRepositoryDispatchEvent.mock.callCount(), 0);
     });
 
     it('does send a "repository_dispatch" when a "push" is for the non stable branch with "doc_changes_branches"', async () => {
@@ -105,14 +109,14 @@ describe('webhook server', () => {
         }
       );
 
-      expect(response.status).toBe(200);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(1);
-      expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
+      assert.strictEqual(response.status, 200);
+      assert.strictEqual(utils.sendRepositoryDispatchEvent.mock.callCount(), 1);
+      assert.deepStrictEqual(utils.sendRepositoryDispatchEvent.mock.calls[0].arguments, [
         'electron',
         'website',
         'doc_changes_branches',
         { branch: '1-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
-      );
+      ]);
     });
 
     it('sends 2 "repository_dispatch" when a "push" contains doc changes in the current branch with "doc_changes" and "doc_changes_branches"', async () => {
@@ -130,21 +134,21 @@ describe('webhook server', () => {
         }
       );
 
-      expect(response.status).toBe(200);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(2);
-      expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
+      assert.strictEqual(response.status, 200);
+      assert.strictEqual(utils.sendRepositoryDispatchEvent.mock.callCount(), 2);
+      assert.deepStrictEqual(utils.sendRepositoryDispatchEvent.mock.calls[1].arguments, [
         'electron',
         'website',
         'doc_changes',
         { branch: '12-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
-      );
+      ]);
 
-      expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
+      assert.deepStrictEqual(utils.sendRepositoryDispatchEvent.mock.calls[0].arguments, [
         'electron',
         'website',
         'doc_changes_branches',
         { branch: '12-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
-      );
+      ]);
     });
 
     it('does not send a "repository_dispatch" if "push" is for an unreleased version', async () => {
@@ -164,8 +168,8 @@ describe('webhook server', () => {
         }
       );
 
-      expect(response.status).toBe(200);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
+      assert.strictEqual(response.status, 200);
+      assert.strictEqual(utils.sendRepositoryDispatchEvent.mock.callCount(), 0);
     });
 
     it('does not send a "repository_dispatch" if "push" is for a trop branch targetting a release version', async () => {
@@ -185,8 +189,8 @@ describe('webhook server', () => {
         }
       );
 
-      expect(response.status).toBe(200);
-      expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
+      assert.strictEqual(response.status, 200);
+      assert.strictEqual(utils.sendRepositoryDispatchEvent.mock.callCount(), 0);
     });
   });
 });
