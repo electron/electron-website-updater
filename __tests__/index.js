@@ -1,8 +1,5 @@
-const fs = require('fs').promises;
-const { join } = require('path');
-const got = require('got').default.extend({
-  throwHttpErrors: false,
-});
+const fs = require('node:fs/promises');
+const { join } = require('node:path');
 
 const utils = require('../utils/utils');
 utils.sendRepositoryDispatchEvent = jest.fn().mockResolvedValue('');
@@ -57,18 +54,18 @@ describe('webhook server', () => {
   });
 
   it('responds to /', async () => {
-    const response = await got.get(`http://localhost:${server.port}/`);
+    const response = await fetch(`http://localhost:${server.port}/`);
 
-    expect(response.statusCode).toBe(200);
-    expect(response.body).toBe(`There's nothing here!`);
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe(`There's nothing here!`);
   });
 
   it('returns a 404 if it does not exists', async () => {
-    const response = await got.get(
+    const response = await fetch(
       `http://localhost:${server.port}/do-not-exists`
     );
 
-    expect(response.statusCode).toBe(404);
+    expect(response.status).toBe(404);
   });
 
   describe('push event', () => {
@@ -76,18 +73,19 @@ describe('webhook server', () => {
       const payload = await getPayload('push');
       payload.commits = [];
 
-      const response = await got.post(
+      const response = await fetch(
         `http://localhost:${server.port}/webhook`,
         {
+          method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
             'X-GitHub-Event': 'push',
           },
-          json: payload,
-          responseType: 'text',
+          body: JSON.stringify(payload),
         }
       );
 
-      expect(response.statusCode).toBe(200);
+      expect(response.status).toBe(200);
       expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
     });
 
@@ -95,19 +93,19 @@ describe('webhook server', () => {
       const payload = await getPayload('push');
       payload.ref = 'refs/heads/1-x-y';
 
-
-      const response = await got.post(
+      const response = await fetch(
         `http://localhost:${server.port}/webhook`,
         {
+          method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
             'X-GitHub-Event': 'push',
           },
-          json: payload,
-          responseType: 'text',
+          body: JSON.stringify(payload),
         }
       );
 
-      expect(response.statusCode).toBe(200);
+      expect(response.status).toBe(200);
       expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(1);
       expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
         'electron',
@@ -120,18 +118,19 @@ describe('webhook server', () => {
     it('sends 2 "repository_dispatch" when a "push" contains doc changes in the current branch with "doc_changes" and "doc_changes_branches"', async () => {
       const payload = await getPayload('push');
 
-      const response = await got.post(
+      const response = await fetch(
         `http://localhost:${server.port}/webhook`,
         {
+          method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
             'X-GitHub-Event': 'push',
           },
-          json: payload,
-          responseType: 'text',
+          body: JSON.stringify(payload),
         }
       );
 
-      expect(response.statusCode).toBe(200);
+      expect(response.status).toBe(200);
       expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(2);
       expect(utils.sendRepositoryDispatchEvent).toHaveBeenCalledWith(
         'electron',
@@ -153,18 +152,19 @@ describe('webhook server', () => {
       const payload = await getPayload('push');
       payload.ref = 'refs/heads/13-x-y';
 
-      const response = await got.post(
+      const response = await fetch(
         `http://localhost:${server.port}/webhook`,
         {
+          method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
             'X-GitHub-Event': 'push',
           },
-          json: payload,
-          responseType: 'text',
+          body: JSON.stringify(payload),
         }
       );
 
-      expect(response.statusCode).toBe(200);
+      expect(response.status).toBe(200);
       expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
     });
 
@@ -173,18 +173,19 @@ describe('webhook server', () => {
       const payload = await getPayload('push');
       payload.ref = 'refs/heads/trop/12-x-y-bp-docs-win-getparentwindow-returns-browserwindow-null--1635174659170';
 
-      const response = await got.post(
+      const response = await fetch(
         `http://localhost:${server.port}/webhook`,
         {
+          method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
             'X-GitHub-Event': 'push',
           },
-          json: payload,
-          responseType: 'text',
+          body: JSON.stringify(payload),
         }
       );
 
-      expect(response.statusCode).toBe(200);
+      expect(response.status).toBe(200);
       expect(utils.sendRepositoryDispatchEvent).toBeCalledTimes(0);
     });
   });
