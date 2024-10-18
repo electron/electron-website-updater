@@ -5,10 +5,12 @@ const { afterEach, beforeEach, describe, mock, it } = require('node:test');
 
 const utils = require('../utils/utils');
 utils.sendRepositoryDispatchEvent = mock.fn(() => Promise.resolve(''));
-utils.getLatestInformation = mock.fn(() => Promise.resolve({
-  version: '12.0.6',
-  branch: '12-x-y',
-}));
+utils.getLatestInformation = mock.fn(() =>
+  Promise.resolve({
+    version: '12.0.6',
+    branch: '12-x-y',
+  })
+);
 
 const { start } = require('../index');
 
@@ -77,17 +79,14 @@ describe('webhook server', () => {
       const payload = await getPayload('push');
       payload.commits = [];
 
-      const response = await fetch(
-        `http://localhost:${server.port}/webhook`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-GitHub-Event': 'push',
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(`http://localhost:${server.port}/webhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-GitHub-Event': 'push',
+        },
+        body: JSON.stringify(payload),
+      });
 
       assert.strictEqual(response.status, 200);
       assert.strictEqual(utils.sendRepositoryDispatchEvent.mock.callCount(), 0);
@@ -97,58 +96,61 @@ describe('webhook server', () => {
       const payload = await getPayload('push');
       payload.ref = 'refs/heads/1-x-y';
 
-      const response = await fetch(
-        `http://localhost:${server.port}/webhook`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-GitHub-Event': 'push',
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(`http://localhost:${server.port}/webhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-GitHub-Event': 'push',
+        },
+        body: JSON.stringify(payload),
+      });
 
       assert.strictEqual(response.status, 200);
       assert.strictEqual(utils.sendRepositoryDispatchEvent.mock.callCount(), 1);
-      assert.deepStrictEqual(utils.sendRepositoryDispatchEvent.mock.calls[0].arguments, [
-        'electron',
-        'website',
-        'doc_changes_branches',
-        { branch: '1-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
-      ]);
+      assert.deepStrictEqual(
+        utils.sendRepositoryDispatchEvent.mock.calls[0].arguments,
+        [
+          'electron',
+          'website',
+          'doc_changes_branches',
+          { branch: '1-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' },
+        ]
+      );
     });
 
     it('sends 2 "repository_dispatch" when a "push" contains doc changes in the current branch with "doc_changes" and "doc_changes_branches"', async () => {
       const payload = await getPayload('push');
 
-      const response = await fetch(
-        `http://localhost:${server.port}/webhook`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-GitHub-Event': 'push',
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(`http://localhost:${server.port}/webhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-GitHub-Event': 'push',
+        },
+        body: JSON.stringify(payload),
+      });
 
       assert.strictEqual(response.status, 200);
       assert.strictEqual(utils.sendRepositoryDispatchEvent.mock.callCount(), 2);
-      assert.deepStrictEqual(utils.sendRepositoryDispatchEvent.mock.calls[1].arguments, [
-        'electron',
-        'website',
-        'doc_changes',
-        { branch: '12-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
-      ]);
+      assert.deepStrictEqual(
+        utils.sendRepositoryDispatchEvent.mock.calls[1].arguments,
+        [
+          'electron',
+          'website',
+          'doc_changes',
+          { branch: '12-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' },
+        ]
+      );
 
-      assert.deepStrictEqual(utils.sendRepositoryDispatchEvent.mock.calls[0].arguments, [
-        'electron',
-        'website',
-        'doc_changes_branches',
-        { branch: '12-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' }
-      ]);
+      assert.deepStrictEqual(
+        utils.sendRepositoryDispatchEvent.mock.calls[0].arguments,
+        [
+          'electron',
+          'website',
+          'doc_changes_branches',
+          { branch: '12-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' },
+        ]
+      );
     });
 
     it('does not send a "repository_dispatch" if "push" is for an unreleased version', async () => {
@@ -156,17 +158,14 @@ describe('webhook server', () => {
       const payload = await getPayload('push');
       payload.ref = 'refs/heads/13-x-y';
 
-      const response = await fetch(
-        `http://localhost:${server.port}/webhook`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-GitHub-Event': 'push',
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(`http://localhost:${server.port}/webhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-GitHub-Event': 'push',
+        },
+        body: JSON.stringify(payload),
+      });
 
       assert.strictEqual(response.status, 200);
       assert.strictEqual(utils.sendRepositoryDispatchEvent.mock.callCount(), 0);
@@ -175,19 +174,17 @@ describe('webhook server', () => {
     it('does not send a "repository_dispatch" if "push" is for a trop branch targetting a release version', async () => {
       // Latest stable is 12 and here the event is for 13
       const payload = await getPayload('push');
-      payload.ref = 'refs/heads/trop/12-x-y-bp-docs-win-getparentwindow-returns-browserwindow-null--1635174659170';
+      payload.ref =
+        'refs/heads/trop/12-x-y-bp-docs-win-getparentwindow-returns-browserwindow-null--1635174659170';
 
-      const response = await fetch(
-        `http://localhost:${server.port}/webhook`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-GitHub-Event': 'push',
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(`http://localhost:${server.port}/webhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-GitHub-Event': 'push',
+        },
+        body: JSON.stringify(payload),
+      });
 
       assert.strictEqual(response.status, 200);
       assert.strictEqual(utils.sendRepositoryDispatchEvent.mock.callCount(), 0);
