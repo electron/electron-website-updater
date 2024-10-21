@@ -64,7 +64,7 @@ const getReleases = async () => {
   const queryResults = await graphqlWithAuth(query);
 
   const releases = toReleases(
-    queryResults.repository.refs.nodes[0].repository.releases.nodes
+    queryResults.repository.refs.nodes[0].repository.releases.nodes,
   );
 
   return releases.sort(compare);
