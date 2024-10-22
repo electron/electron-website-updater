@@ -128,7 +128,7 @@ const pushHandler = async (req, res) => {
         {
           sha: payload.after,
           branch: payload.ref.replace('refs/heads/', ''),
-        }
+        },
       );
     }
   }

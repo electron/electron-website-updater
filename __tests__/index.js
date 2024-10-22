@@ -9,7 +9,7 @@ utils.getLatestInformation = mock.fn(() =>
   Promise.resolve({
     version: '12.0.6',
     branch: '12-x-y',
-  })
+  }),
 );
 
 const { start } = require('../index');
@@ -68,7 +68,7 @@ describe('webhook server', () => {
 
   it('returns a 404 if it does not exists', async () => {
     const response = await fetch(
-      `http://localhost:${server.port}/do-not-exists`
+      `http://localhost:${server.port}/do-not-exists`,
     );
 
     assert.strictEqual(response.status, 404);
@@ -114,7 +114,7 @@ describe('webhook server', () => {
           'website',
           'doc_changes_branches',
           { branch: '1-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' },
-        ]
+        ],
       );
     });
 
@@ -139,7 +139,7 @@ describe('webhook server', () => {
           'website',
           'doc_changes',
           { branch: '12-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' },
-        ]
+        ],
       );
 
       assert.deepStrictEqual(
@@ -149,7 +149,7 @@ describe('webhook server', () => {
           'website',
           'doc_changes_branches',
           { branch: '12-x-y', sha: 'd07ca4f716c62d6f4a481a74b54b448b95bbe3d9' },
-        ]
+        ],
       );
     });
 
